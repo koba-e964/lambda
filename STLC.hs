@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module STLC where
 
 import qualified Data.Map as Map
@@ -15,17 +16,28 @@ getInfo (LEApp _ _ a) = a
 getInfo (LEAbst _ _ a) = a
 getInfo (LEVar _ a) = a
 
-instance Show a => Show (LambdaExprInfo a) where
+type LambdaExpr = LambdaExprInfo ()
+type TypedLambdaExpr = LambdaExprInfo LambdaType
+
+instance Show LambdaExpr where
+  show x = case x of
+    LEApp x y _ -> showParen x ++ " " ++ showParen y
+    LEAbst x e _ -> "\\" ++ x ++ ". " ++ show e
+    LEVar x _ -> x
+    where
+    showParen s@(LEVar {}) = show s
+    showParen x =  "(" ++ show x ++ ")"
+instance Show TypedLambdaExpr where
   show x = case x of
     LEApp x y a -> showParen x ++ " " ++ showParen y ++ " : " ++ show a
-    LEAbst x e a -> "\\" ++ x ++ ". " ++ showParen e ++ " : " ++ show a
-    LEVar x a -> x ++ " : " ++ show a
+    LEAbst x e (LTArrow a b) -> "\\" ++ x ++ ":" ++ show a ++ ". " ++ showParen e ++ " : " ++ show b
+    LEAbst _ _ _ -> error "non-arrow type in lambda abstraction"
+    LEVar x a -> x
     where
+    showParen s@(LEVar {}) = show s
     showParen x =  "(" ++ show x ++ ")"
 
 
-type LambdaExpr = LambdaExprInfo ()
-type TypedLambdaExpr = LambdaExprInfo LambdaType
 
 
 -- | Lambda expression represented with de Bruijn index term
