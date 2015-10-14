@@ -102,11 +102,13 @@ assignTypeVars expr = flip evalState 0 $ go expr Map.empty
 unifyTypes ls = go Map.empty ls
   where
     go env [] = return env
+    go env ((x, y):rest) | x == y = go env rest
     go env ((LTVar i1, x):rest)
       | Map.member i1 env = go env ((env Map.! i1, x):rest)
-      | otherwise = go (Map.insert i1 x (Map.map (substituteOne i1 x) env)) rest
+      | otherwise = let v = substType env x in
+          go (Map.insert i1 v (Map.map (substituteOne i1 v) env)) rest
     go env ((x, LTVar i2):rest) = go env ((LTVar i2, x):rest)
-    go env ((LTArrow t1 t2, LTArrow t3 t4):rest) = go env ((t1,t3):(t2,t4):rest)
+    go env ((LTArrow t1 t2, LTArrow t3 t4):rest) = go env ((t1, t3):(t2, t4):rest)
     go env ((LTBase, LTBase):rest) = go env rest
     go env ((_, _):rest) = Nothing
 
@@ -122,14 +124,19 @@ substituteOne tvar trep ty = go ty
 
 replaceTypes subst expr = go expr
   where
-    go (LEApp a b ty) = LEApp (go a) (go b) (rep ty)
-    go (LEAbst x e ty) = LEAbst x (go e) (rep ty)
-    go (LEVar x ty) = LEVar x (rep ty)
+    go (LEApp a b ty) = LEApp (go a) (go b) (substType subst ty)
+    go (LEAbst x e ty) = LEAbst x (go e) (substType subst ty)
+    go (LEVar x ty) = LEVar x (substType subst ty)
+
+substType :: TypeSubst -> LambdaType -> LambdaType
+substType subst = rep
+  where
     rep LTBase = LTBase
     rep (LTArrow x y) = LTArrow (rep x) (rep y)
     rep (LTVar i)
       | Map.member i subst = subst Map.! i
       | otherwise = LTVar i
+
 
 leToDb :: LambdaExpr -> DeBruijn
 leToDb _ = undefined
