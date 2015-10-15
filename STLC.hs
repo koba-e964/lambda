@@ -1,8 +1,10 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module STLC where
 
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Monad.State
+import Debug.Trace
 
 type Name = String
 
@@ -140,4 +142,68 @@ substType subst = rep
 
 leToDb :: LambdaExpr -> DeBruijn
 leToDb _ = undefined
-  
+
+
+-- Evaluation
+
+-- Call by Value (CbV)
+
+-- | Apply beta-reduction once.
+cbvStep :: LambdaExprInfo a -> Maybe (LambdaExprInfo a)
+cbvStep (LEApp z@(LEAbst x m a1) y a2) =
+  let res = cbvStep y in
+  case res of
+    Just r  -> Just $ LEApp z r a2
+    Nothing -> Just $ captureAvoidingSubst x m y
+cbvStep (LEApp x y a) =
+  let res = cbvStep x in
+  case res of
+    Just r -> Just $ LEApp r y a
+    Nothing -> case cbvStep y of
+      Just r2 -> Just $ LEApp x r2 a
+      Nothing -> Nothing
+cbvStep _ = Nothing
+
+cbvReduce :: LambdaExprInfo () -> LambdaExprInfo ()
+cbvReduce expr =
+  traceShow expr $
+  let res = cbvStep expr in
+  case res of
+    Nothing -> expr
+    Just r -> cbvReduce r
+
+-- | m[x := y], TODO not confirmed
+captureAvoidingSubst :: Name -> LambdaExprInfo a -> LambdaExprInfo a -> LambdaExprInfo a
+captureAvoidingSubst x m y = go m
+  where
+    go (LEApp p q b) = LEApp (go p) (go q) b
+    go (LEAbst p q b)
+      | p /= x = 
+        let fv = freeVars y in
+        let freshP = if Set.member p fv then freshVar fv else p in
+        LEAbst freshP (go (renameVar p freshP q)) b
+    go (LEVar p b)
+      | p == x = y
+    go p = p
+
+freeVars :: LambdaExprInfo a -> Set.Set Name
+freeVars (LEApp x y _) = freeVars x `Set.union` freeVars y
+freeVars (LEAbst x y _) = Set.delete x (freeVars y)
+freeVars (LEVar x _) = Set.singleton x
+
+-- | Set.member (freshVar set) set == False
+freshVar :: Set.Set Name -> Name
+freshVar set = head $ filter (\x -> Set.notMember x set) $ map (\x -> "v" ++ show x) [0..]
+
+-- | renameVar p p' a replaces all free occurrences of p in a with p'.
+renameVar :: Name -> Name -> LambdaExprInfo a -> LambdaExprInfo a
+renameVar p p' expr = go expr
+  where
+    go (LEApp v w b) = LEApp (go v) (go w) b
+    go (LEAbst v w b)
+      | v /= p = 
+        LEAbst v (go w) b
+    go (LEVar v b)
+      | v == p = LEVar p' b
+    go e = e
+

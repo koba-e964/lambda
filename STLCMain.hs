@@ -32,3 +32,6 @@ main = do
   putStrLn $ "2 2:" ++ show (typeTerm $ lapp (natToLT 2) (natToLT 2))
   let not = labst "b" (labst "x" (labst "y" (lapp (lapp varb vary) varx)))
   putStrLn $ "not:" ++ show (typeTerm not)
+  print $ cbvReduce (lapp lid lid)
+  print $ cbvReduce $ (lapp (lapp ((natToLT 2)) not) tt)
+  print $ cbvReduce $ lapp (labst "x" (labst "y" varx)) vary
