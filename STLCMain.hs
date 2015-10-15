@@ -12,19 +12,23 @@ natToLT n = LEAbst "f" (LEAbst "x" (go n) ()) ()
 lapp x y = LEApp x y ()
 labst x y = LEAbst x y ()
 lvar x = LEVar x ()
+lid = labst "x" (lvar "x")
+
+varb = lvar "b"
+varx = lvar "x"
+vary = lvar "y"
 
 main :: IO ()
 main = do
-  let lid = LEAbst "x" (LEVar "x" ()) ()
   print $ fromJust $ typeTerm (LEApp lid lid ())
-  let t3 = LEApp (LEApp lid lid ()) lid ()
+  let t3 = lapp (lapp lid lid) lid
   print $ fromJust $ typeTerm t3
-  let tt = LEAbst "x" (LEAbst "y" (LEVar "x" ()) ()) ()
-  let ff = LEAbst "x" lid ()
+  let tt = labst "x" (labst "y" varx)
+  let ff = labst "x" lid
   putStrLn $ "tt:" ++ show (typeTerm tt)
   putStrLn $ "ff:" ++ show (typeTerm ff)
   putStrLn $ "1:" ++ show (typeTerm $ natToLT 1)
   putStrLn $ "2:" ++ show (typeTerm $ natToLT 2)
-  putStrLn $ "2 2:" ++ show (typeTerm $ LEApp (natToLT 2) (natToLT 2) ())
-  let not = labst "b" (labst "x" (labst "y" (lapp (lapp (lvar "b") (lvar "y")) (lvar "x"))))
+  putStrLn $ "2 2:" ++ show (typeTerm $ lapp (natToLT 2) (natToLT 2))
+  let not = labst "b" (labst "x" (labst "y" (lapp (lapp varb vary) varx)))
   putStrLn $ "not:" ++ show (typeTerm not)
