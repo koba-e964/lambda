@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleContexts, FlexibleInstances #-}
 module STLC where
 
 import qualified Data.Set as Set
