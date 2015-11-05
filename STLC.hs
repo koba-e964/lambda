@@ -106,6 +106,7 @@ unifyTypes ls = go Map.empty ls
     go env [] = return env
     go env ((x, y):rest) | x == y = go env rest
     go env ((LTVar i1, x):rest)
+      | Set.member i1 (freeTypeVars x) = Nothing -- occur check failure
       | Map.member i1 env = go env ((env Map.! i1, x):rest)
       | otherwise = let v = substType env x in
           go (Map.insert i1 v (Map.map (substituteOne i1 v) env)) rest
@@ -113,6 +114,11 @@ unifyTypes ls = go Map.empty ls
     go env ((LTArrow t1 t2, LTArrow t3 t4):rest) = go env ((t1, t3):(t2, t4):rest)
     go env ((LTBase, LTBase):rest) = go env rest
     go env ((_, _):rest) = Nothing
+
+freeTypeVars :: LambdaType -> Set.Set Int
+freeTypeVars LTBase = Set.empty
+freeTypeVars (LTArrow x y) = Set.union (freeTypeVars x) (freeTypeVars y)
+freeTypeVars (LTVar x) = Set.singleton x
 
 substituteOne :: Int -> LambdaType -> LambdaType -> LambdaType
 substituteOne tvar trep ty = go ty
@@ -144,7 +150,15 @@ leToDb :: LambdaExpr -> DeBruijn
 leToDb _ = undefined
 
 
--- Evaluation
+-- Evaluation Strategies
+
+-- general reduction
+reduceBy :: (LambdaExprInfo a -> Maybe (LambdaExprInfo a)) -> LambdaExprInfo a -> LambdaExprInfo a
+reduceBy strategy expr =
+  let res = strategy expr in
+  case res of
+    Nothing -> expr
+    Just r -> reduceBy strategy r
 
 -- Call by Value (CbV)
 
@@ -166,11 +180,26 @@ cbvStep _ = Nothing
 
 cbvReduce :: LambdaExprInfo () -> LambdaExprInfo ()
 cbvReduce expr =
-  traceShow expr $
-  let res = cbvStep expr in
+  reduceBy cbvStep expr
+
+
+-- CbN
+
+cbnStep :: LambdaExprInfo a -> Maybe (LambdaExprInfo a)
+cbnStep (LEApp z@(LEAbst x m a1) y a2) =
+  Just $ captureAvoidingSubst x m y
+cbnStep (LEApp x y a) =
+  let res = cbvStep x in
   case res of
-    Nothing -> expr
-    Just r -> cbvReduce r
+    Just r -> Just $ LEApp r y a
+    Nothing -> case cbvStep y of
+      Just r2 -> Just $ LEApp x r2 a
+      Nothing -> Nothing
+cbnStep _ = Nothing
+
+cbnReduce :: LambdaExprInfo () -> LambdaExprInfo ()
+cbnReduce expr =
+  traceShow expr $ reduceBy cbnStep expr
 
 -- | m[x := y], TODO not confirmed
 captureAvoidingSubst :: Name -> LambdaExprInfo a -> LambdaExprInfo a -> LambdaExprInfo a

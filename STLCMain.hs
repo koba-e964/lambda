@@ -35,3 +35,10 @@ main = do
   print $ cbvReduce (lapp lid lid)
   print $ cbvReduce $ (lapp (lapp ((natToLT 2)) not) tt)
   print $ cbvReduce $ lapp (labst "x" (labst "y" varx)) vary
+  print $ cbnReduce (lapp lid lid)
+  print $ cbnReduce $ (lapp (lapp ((natToLT 2)) not) tt)
+  print $ cbnReduce $ lapp (labst "x" (labst "y" varx)) vary
+  let omega = labst "x" (lapp (lvar "x") (lvar "x"))
+  print $ cbnReduce (lapp (labst "x" lid) (lapp omega omega))
+  putStrLn $ "omega:" ++ show (typeTerm omega)
+
