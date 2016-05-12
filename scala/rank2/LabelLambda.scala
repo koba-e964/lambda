@@ -28,8 +28,9 @@ case class LabeledLambdaVar(v: String) extends LabeledLambdaTerm {
 }
 
 /**
- * Section 4, System \Lambda_2^{-, \ast}
+ * Section 4, System \Lambda_2^{-, \ast} of [Kfoury and Wells, 1993]
  * LabelLambda adds labels to unlabeled lambda terms.
+ * Given lambda terms must have distinct bound variables.
  */
 object LabelLambda {
   def active(t: LambdaTerm): List[String] = t match {
