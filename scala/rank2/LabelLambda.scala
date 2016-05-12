@@ -14,11 +14,11 @@ case class LabeledLambdaAbst(v: String, l: Int, e: LabeledLambdaTerm) extends La
   override def toString = "\\" + l + " " + v + ". " + e.toString
   override def freeVars = e.freeVars - v
 }
-/*
- * TODO Left-associativity of function application is not implemented. (toString yields redundant parentheses)
- */
 case class LabeledLambdaApp(e1: LabeledLambdaTerm, e2: LabeledLambdaTerm) extends LabeledLambdaTerm {
-  override def toString = e1.toStringParen + " " + e2.toStringParen
+  override def toString = e1 match {
+    case LabeledLambdaApp(_, _) => e1.toString + " " + e2.toStringParen
+    case _ => e1.toStringParen + " " + e2.toStringParen
+  }
   override def freeVars = e1.freeVars ++ e2.freeVars
 }
 case class LabeledLambdaVar(v: String) extends LabeledLambdaTerm {
