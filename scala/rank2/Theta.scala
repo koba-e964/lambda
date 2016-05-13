@@ -44,9 +44,9 @@ object Theta {
 
 object ThetaTest {
   def main(args: Array[String]): Unit = {
-    val term1 = new LambdaParser().parse("(\\f. \\x. f (f x)) (\\y. y)")
-    val term2 = new LambdaParser().parse("(\\f. \\x. f (f x)) ((\\g. \\v. g (g v)) (\\y. y))")
-    println(Theta.thetaNormalForm(LabelLambda.label(term1)))
-    println(Theta.thetaNormalForm(LabelLambda.label(term2)))
+    for (t <- Rank2Example.terms) {
+      println(t + " ===>")
+      println(Theta.thetaNormalForm(LabelLambda.label(t)))
+    }
   }
 }
