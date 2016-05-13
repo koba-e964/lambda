@@ -53,6 +53,7 @@ object LabelLambda {
 final object LabelLambdaTest {
   def main(args: Array[String]): Unit = {
     for (t <- Rank2Example.terms) {
+      AlphaConverter.assertBoundVariablesAreDistinct(t)
       println(t + " ===>")
       println(LabelLambda.label(t))
     }

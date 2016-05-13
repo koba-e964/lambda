@@ -45,6 +45,7 @@ object Theta {
 object ThetaTest {
   def main(args: Array[String]): Unit = {
     for (t <- Rank2Example.terms) {
+      AlphaConverter.assertBoundVariablesAreDistinct(t)
       println(t + " ===>")
       println(Theta.thetaNormalForm(LabelLambda.label(t)))
     }
